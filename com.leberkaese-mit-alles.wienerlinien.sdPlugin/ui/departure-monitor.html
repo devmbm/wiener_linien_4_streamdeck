@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <title>Wiener Linien Departure Monitor Settings</title>
+    <meta charset="utf-8" />
+    <script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+</head>
+
+<body>
+    <sdpi-item label="RBL Number">
+        <sdpi-textfield
+            setting="rbl"
+            type="number"
+            placeholder="e.g., 4259"
+            required
+            pattern="[0-9]+"
+        ></sdpi-textfield>
+    </sdpi-item>
+
+    <sdpi-item label="Filter these lines (comma-separated)">
+        <sdpi-textfield
+            setting="lineFilter"
+            type="text"
+            placeholder="e.g., U1, 26A, 13A"
+        ></sdpi-textfield>
+        <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
+            Only show departures for specific lines (leave empty for all lines)
+        </p>
+    </sdpi-item>
+
+    <sdpi-item label="Refresh Interval (seconds)">
+        <sdpi-range
+            setting="refreshInterval"
+            min="10"
+            max="300"
+            step="5"
+            default="30"
+            showlabels
+        ></sdpi-range>
+        <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
+            How often to fetch new departure data (10-300 seconds)
+        </p>
+    </sdpi-item>
+
+    <sdpi-item label="Show 2 departures of that line">
+        <sdpi-checkbox
+            setting="showTwoDepartures"
+            default="true"
+        ></sdpi-checkbox>
+        <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
+            Display next 2 departures of the same line side-by-side on line 3
+        </p>
+    </sdpi-item>
+
+    <sdpi-item label="Show Progress Bar">
+        <sdpi-checkbox
+            setting="showProgressBar"
+            default="false"
+        ></sdpi-checkbox>
+        <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
+            Display 2-pixel progress bar at bottom showing time until next refresh
+        </p>
+    </sdpi-item>
+
+    <sdpi-item label="Manual Refresh">
+        <sdpi-button id="refreshButton">Refresh Now</sdpi-button>
+        <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
+            Click to immediately fetch latest departure data
+        </p>
+    </sdpi-item>
+
+    <script>
+        document.getElementById('refreshButton')?.addEventListener('click', () => {
+            // Send message to plugin to trigger refresh
+            if (window.$SD) {
+                window.$SD.api.sendToPlugin({ event: 'refreshNow' });
+            }
+        });
+    </script>
+
+    <sdpi-item>
+        <details>
+            <summary>How to find your RBL number</summary>
+            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
+                <strong>RBL numbers</strong> identify specific platforms and directions at Vienna transit stops.
+            </p>
+            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
+                <strong>Find your RBL:</strong><br>
+                1. Visit <a href="https://till.mabe.at/rbl/" target="_blank" style="color: #0066cc;">till.mabe.at/rbl/</a><br>
+                2. Search for your stop name<br>
+                3. Select the line and direction<br>
+                4. Copy the RBL number
+            </p>
+            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
+                <strong>Examples:</strong><br>
+                • Karlsplatz U1 → Leopoldau: RBL 4907<br>
+                • Schwedenplatz U4 → Hütteldorf: RBL 4201
+            </p>
+        </details>
+    </sdpi-item>
+
+    <sdpi-item>
+        <details>
+            <summary>About this plugin</summary>
+            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
+                Displays real-time departure information from Wiener Linien (Vienna public transport).
+            </p>
+            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
+                <strong>Display format:</strong><br>
+                Line number<br>
+                Destination<br>
+                Minutes until departure
+            </p>
+            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
+                <strong>Features:</strong><br>
+                • Auto-updates every 30 seconds<br>
+                • Press button to force refresh<br>
+                • Shows next departure only
+            </p>
+            <p style="margin: 10px 0; font-size: 11px; color: #666;">
+                Data: Wiener Linien / Stadt Wien (CC BY 4.0)
+            </p>
+        </details>
+    </sdpi-item>
+</body>
+
+</html>
