@@ -15,6 +15,7 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 	private progressIntervals = new Map<string, NodeJS.Timeout>();
 	private actionSettings = new Map<string, DepartureSettings>();
 	private lastUpdateTimes = new Map<string, number>();
+	private lastDepartureData = new Map<string, { first: DepartureInfo | null | undefined, second?: DepartureInfo | null | undefined }>();
 	private static readonly DEFAULT_REFRESH_INTERVAL = 30; // Default 30 seconds
 	private static readonly PROGRESS_UPDATE_INTERVAL = 100; // Update progress bar every 100ms
 
@@ -78,6 +79,7 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 
 		// Set up progress bar updates if enabled
 		if (settings.showProgressBar) {
+			streamDeck.logger.info(`Starting progress bar for action ${action.id}`);
 			this.startProgressBar(action.id);
 		}
 
@@ -204,8 +206,14 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 				// Find the second departure of the same line
 				const secondDeparture = allDepartures.slice(1).find(dep => dep.line === targetLine) || null;
 
+				// Cache the departure data
+				this.lastDepartureData.set(actionId, { first: firstDeparture, second: secondDeparture });
+
+				// Calculate initial progress if progress bar is enabled
+				const progressPercent = settings?.showProgressBar ? 0 : undefined;
+
 				// Render custom image with departure info
-				await this.renderDepartureImage(action, firstDeparture, secondDeparture);
+				await this.renderDepartureImage(action, firstDeparture, secondDeparture, progressPercent);
 
 				streamDeck.logger.debug(`Updated action ${actionId}: ${firstDeparture.line} to ${firstDeparture.towards} in ${firstDeparture.countdown} min` +
 					(secondDeparture ? ` and ${secondDeparture.countdown} min` : ''));
@@ -213,8 +221,14 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 				// Show only the first departure
 				const departure = allDepartures[0];
 
+				// Cache the departure data
+				this.lastDepartureData.set(actionId, { first: departure, second: null });
+
+				// Calculate initial progress if progress bar is enabled
+				const progressPercent = settings?.showProgressBar ? 0 : undefined;
+
 				// Render custom image with single departure info
-				await this.renderDepartureImage(action, departure, null);
+				await this.renderDepartureImage(action, departure, null, progressPercent);
 
 				streamDeck.logger.debug(`Updated action ${actionId}: ${departure.line} to ${departure.towards} in ${departure.countdown} min`);
 			}
@@ -237,12 +251,18 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 
 		if (!ctx) return;
 
-		// Black background
-		ctx.fillStyle = '#000000';
+		// Get settings for custom colors
+		const settings = this.actionSettings.get(action.id);
+		const bgColor = settings?.backgroundColor || '#000000';
+		const textColor = settings?.textColor || '#d0cd08';
+		const progressColor = settings?.progressBarColor || '#d0cd08';
+
+		// Background
+		ctx.fillStyle = bgColor;
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-		// Yellow text color
-		ctx.fillStyle = '#d0cd08';
+		// Text color
+		ctx.fillStyle = textColor;
 		ctx.textAlign = 'left';
 		ctx.textBaseline = 'top';
 
@@ -296,7 +316,7 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 		// Draw progress bar if specified (bottom 2 pixels)
 		if (progressPercent !== undefined && progressPercent >= 0) {
 			const progressWidth = Math.floor((canvas.width * progressPercent) / 100);
-			ctx.fillStyle = '#d0cd08'; // Yellow progress bar
+			ctx.fillStyle = progressColor;
 			ctx.fillRect(0, canvas.height - 2, progressWidth, 2);
 		}
 
@@ -338,6 +358,75 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 	}
 
 	/**
+	 * Start the progress bar animation for an action
+	 */
+	private startProgressBar(actionId: string): void {
+		// Stop any existing progress timer
+		this.stopProgressBar(actionId);
+
+		const progressInterval = setInterval(() => {
+			this.updateProgressBar(actionId);
+		}, DepartureMonitor.PROGRESS_UPDATE_INTERVAL);
+
+		this.progressIntervals.set(actionId, progressInterval);
+	}
+
+	/**
+	 * Stop the progress bar animation for an action
+	 */
+	private stopProgressBar(actionId: string): void {
+		const progressInterval = this.progressIntervals.get(actionId);
+		if (progressInterval) {
+			clearInterval(progressInterval);
+			this.progressIntervals.delete(actionId);
+		}
+	}
+
+	/**
+	 * Update the progress bar for an action
+	 */
+	private async updateProgressBar(actionId: string): Promise<void> {
+		const action = this.actions.find((a) => a.id === actionId);
+		if (!action) return;
+
+		const settings = this.actionSettings.get(actionId);
+		if (!settings?.showProgressBar) return;
+
+		const lastUpdate = this.lastUpdateTimes.get(actionId);
+		if (!lastUpdate) return;
+
+		const refreshInterval = Math.max((settings.refreshInterval || DepartureMonitor.DEFAULT_REFRESH_INTERVAL), 10) * 1000;
+		const elapsed = Date.now() - lastUpdate;
+		const progressPercent = Math.min((elapsed / refreshInterval) * 100, 100);
+
+		// Re-render with current departure data and progress
+		// We need to store the current departure data to re-render it
+		// For now, we'll trigger a full update which includes the progress
+		const rbl = settings.rbl;
+		if (rbl) {
+			const rblNumber = parseInt(rbl, 10);
+			if (!isNaN(rblNumber)) {
+				await this.updateDepartureWithProgress(actionId, rblNumber, progressPercent);
+			}
+		}
+	}
+
+	/**
+	 * Update departure with progress bar (lightweight version for progress updates)
+	 */
+	private async updateDepartureWithProgress(actionId: string, rblNumber: number, progressPercent: number): Promise<void> {
+		const action = this.actions.find((a) => a.id === actionId);
+		if (!action) return;
+
+		// Get cached departure data
+		const cachedData = this.lastDepartureData.get(actionId);
+		if (!cachedData) return;
+
+		// Re-render with cached data and updated progress
+		await this.renderDepartureImage(action, cachedData.first, cachedData.second, progressPercent);
+	}
+
+	/**
 	 * Stop periodic updates for an action
 	 */
 	private stopUpdates(actionId: string): void {
@@ -346,6 +435,9 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 			clearInterval(interval);
 			this.updateIntervals.delete(actionId);
 		}
+
+		this.stopProgressBar(actionId);
+		this.lastUpdateTimes.delete(actionId);
 	}
 }
 
@@ -363,4 +455,10 @@ type DepartureSettings = {
 	showTwoDepartures?: boolean;
 	/** Show progress bar indicating time until next refresh (default: false) */
 	showProgressBar?: boolean;
+	/** Background color as hex code (default: #000000) */
+	backgroundColor?: string;
+	/** Text color as hex code (default: #d0cd08) */
+	textColor?: string;
+	/** Progress bar color as hex code (default: #d0cd08) */
+	progressBarColor?: string;
 };
