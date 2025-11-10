@@ -6,7 +6,7 @@
 		{
 			"Name": "Vienna - Wiener Linien Departure Board",
 			"UUID": "com.leberkaese-mit-alles.wienerlinien.departure",
-			"Icon": "imgs/actions/counter/icon",
+			"Icon": "imgs/actions/wienerlinien_departures/icon",
 			"Tooltip": "Displays real-time departure information from Wiener Linien",
 			"PropertyInspectorPath": "ui/departure-monitor.html",
 			"Controllers": [
@@ -14,7 +14,7 @@
 			],
 			"States": [
 				{
-					"Image": "imgs/actions/counter/icon",
+					"Image": "imgs/actions/wienerlinien_departures/icon",
 					"TitleAlignment": "top",
 					"FontSize": 14,
 					"TitleColor": "#d0cd08",
