@@ -47,16 +47,18 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 		this.stopUpdates(action.id);
 
 		if (!rbl) {
-			await action.setTitle("No RBL\nSet in\nSettings");
 			streamDeck.logger.warn(`Action ${action.id} has no RBL number configured`);
+			// Render "No Station set" message as an image (similar to error messages)
+			await this.renderNoStationSetImage(action);
 			return;
 		}
 
 		// Validate RBL is a number
 		const rblNumber = parseInt(rbl, 10);
 		if (isNaN(rblNumber)) {
-			await action.setTitle("Invalid\nRBL\nNumber");
 			streamDeck.logger.error(`Invalid RBL number: ${rbl}`);
+			// Render "Invalid RBL" message as an image
+			await this.renderInvalidRBLImage(action);
 			return;
 		}
 
@@ -181,6 +183,8 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 			if (!allDepartures || allDepartures.length === 0) {
 				// No departures in next 70 minutes
 				streamDeck.logger.info(`No departures found for RBL ${rblNumber}`);
+				// Clear cached data to prevent progress bar from showing old data
+				this.lastDepartureData.delete(actionId);
 				await this.renderDepartureImage(action, null, null);
 				return;
 			}
@@ -193,7 +197,10 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 
 				if (allDepartures.length === 0) {
 					streamDeck.logger.info(`No departures found for filtered lines at RBL ${rblNumber}`);
-					await this.renderDepartureImage(action, null, null);
+					// Clear cached data to prevent progress bar from showing old data
+					this.lastDepartureData.delete(actionId);
+					// Show "No line found" message instead of generic "No Departures"
+					await this.renderNoLineFoundImage(action);
 					return;
 				}
 			}
@@ -245,6 +252,9 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 	 * Render a custom image with departure information
 	 */
 	private async renderDepartureImage(action: any, firstDeparture: DepartureInfo | null | undefined, secondDeparture?: DepartureInfo | null | undefined, progressPercent?: number): Promise<void> {
+		// Clear any error title when we're rendering new content
+		await action.setTitle("");
+
 		// Create canvas using node-canvas
 		const canvas = createCanvas(144, 144);
 		const ctx = canvas.getContext('2d');
@@ -255,7 +265,7 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 		const settings = this.actionSettings.get(action.id);
 		const bgColor = settings?.backgroundColor || '#000000';
 		const textColor = settings?.textColor || '#d0cd08';
-		const progressColor = settings?.progressBarColor || '#d0cd08';
+		const progressColor = settings?.progressBarColor || '#525003';
 
 		// Background
 		ctx.fillStyle = bgColor;
@@ -324,6 +334,114 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 		const buffer = canvas.toBuffer('image/png');
 		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
 		await action.setImage(base64);
+	}
+
+	/**
+	 * Render "No line found" message when line filter doesn't match any departures
+	 */
+	private async renderNoLineFoundImage(action: any): Promise<void> {
+		const canvas = createCanvas(144, 144);
+		const ctx = canvas.getContext('2d');
+
+		if (!ctx) return;
+
+		// Get settings for custom colors
+		const settings = this.actionSettings.get(action.id);
+		const bgColor = settings?.backgroundColor || '#000000';
+		const textColor = settings?.textColor || '#d0cd08';
+
+		// Background
+		ctx.fillStyle = bgColor;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		// Text color
+		ctx.fillStyle = textColor;
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'top';
+
+		// Show "No line found" message
+		ctx.font = '16px sans-serif';
+		ctx.fillText('No', 10, 40);
+		ctx.fillText('Line', 10, 65);
+		ctx.fillText('Found', 10, 90);
+
+		// Convert canvas to base64 and set as image
+		const buffer = canvas.toBuffer('image/png');
+		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
+		await action.setImage(base64);
+		await action.setTitle("");
+	}
+
+	/**
+	 * Render "No Station set in Settings" message when RBL is not configured
+	 */
+	private async renderNoStationSetImage(action: any): Promise<void> {
+		const canvas = createCanvas(144, 144);
+		const ctx = canvas.getContext('2d');
+
+		if (!ctx) return;
+
+		// Get settings for custom colors
+		const settings = this.actionSettings.get(action.id);
+		const bgColor = settings?.backgroundColor || '#000000';
+		const textColor = settings?.textColor || '#d0cd08';
+
+		// Background
+		ctx.fillStyle = bgColor;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		// Text color
+		ctx.fillStyle = textColor;
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'top';
+
+		// Show "No Station set in Settings" message
+		ctx.font = '20px sans-serif';
+		ctx.fillText('No Station', 10, 30);
+		ctx.fillText('set in', 10, 60);
+		ctx.fillText('Settings', 10, 90);
+
+		// Convert canvas to base64 and set as image
+		const buffer = canvas.toBuffer('image/png');
+		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
+		await action.setImage(base64);
+		await action.setTitle("");
+	}
+
+	/**
+	 * Render "Invalid RBL Number" message when RBL is not a valid number
+	 */
+	private async renderInvalidRBLImage(action: any): Promise<void> {
+		const canvas = createCanvas(144, 144);
+		const ctx = canvas.getContext('2d');
+
+		if (!ctx) return;
+
+		// Get settings for custom colors
+		const settings = this.actionSettings.get(action.id);
+		const bgColor = settings?.backgroundColor || '#000000';
+		const textColor = settings?.textColor || '#d0cd08';
+
+		// Background
+		ctx.fillStyle = bgColor;
+		ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+		// Text color
+		ctx.fillStyle = textColor;
+		ctx.textAlign = 'left';
+		ctx.textBaseline = 'top';
+
+		// Show "Invalid RBL Number" message
+		ctx.font = '16px sans-serif';
+		ctx.fillText('Invalid', 10, 20);
+		ctx.fillText('RBL', 10, 45);
+		ctx.fillText('Number', 10, 70);
+
+		// Convert canvas to base64 and set as image
+		const buffer = canvas.toBuffer('image/png');
+		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
+		await action.setImage(base64);
+		await action.setTitle("");
 	}
 
 	/**
@@ -459,6 +577,6 @@ type DepartureSettings = {
 	backgroundColor?: string;
 	/** Text color as hex code (default: #d0cd08) */
 	textColor?: string;
-	/** Progress bar color as hex code (default: #d0cd08) */
+	/** Progress bar color as hex code (default: #525003) */
 	progressBarColor?: string;
 };

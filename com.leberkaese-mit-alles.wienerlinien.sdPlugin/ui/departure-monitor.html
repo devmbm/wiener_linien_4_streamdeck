@@ -8,14 +8,68 @@
 </head>
 
 <body>
-    <sdpi-item label="RBL Number">
+    <!-- Introduction -->
+    <sdpi-item>
+        <p style="margin: 10px 0; font-size: 12px; line-height: 1.6;">
+            This plugin will use the Wiener Linien API to show departures for a given station.
+        </p>
+    </sdpi-item>
+
+    <!-- Station Selection Header -->
+    <sdpi-item>
+        <div style="display: flex; align-items: center; margin: 15px 0 10px 0;">
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+            <p style="margin: 0 10px; font-size: 13px; font-weight: bold; white-space: nowrap;">
+                Choose your station
+            </p>
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+        </div>
+    </sdpi-item>
+
+    <!-- Station RBL Input -->
+    <sdpi-item label="Station StopID (or RBL Number)">
         <sdpi-textfield
+            id="rblInput"
             setting="rbl"
-            type="number"
-            placeholder="e.g., 4259"
+            type="text"
+            default="4118"
+            placeholder="4118"
             required
             pattern="[0-9]+"
         ></sdpi-textfield>
+    </sdpi-item>
+
+    <!-- Warning for Empty Value -->
+    <sdpi-item>
+        <p id="defaultWarning" style="margin: 5px 0; font-size: 11px; line-height: 1.5; color: #ff8800; display: none;">
+            You need to know your Station StopID (or RBL Number) to show departures from that station.<br><br>
+            Use <strong>4118</strong> <em>(Stephansplatz U1 departures in Oberlaa direction)</em> as an example to see the plugin working, or read below how to find the number for your station.
+        </p>
+    </sdpi-item>
+
+    <!-- Instructions -->
+    <sdpi-item>
+        <p style="margin: 15px 0 5px 0; font-size: 12px; line-height: 1.6;">
+            <strong>How to choose my preferred station, line and direction?</strong>
+        </p>
+        <p style="margin: 5px 0; font-size: 12px; line-height: 1.6;">
+            1. Navigate here to find your Station ID / RBL number: <a href="https://till.mabe.at/rbl/" target="_blank" style="color: #0066cc;">till.mabe.at/rbl/</a><br>
+            2. Select the public transport line<br>
+            3. Select a given station of that line<br>
+            4. Select the direction<br>
+            5. Copy the value named "RBL/StopId" and paste it in the "Station StopID (or RBL Number)" field above.
+        </p>
+    </sdpi-item>
+
+    <!-- Optional Settings Header -->
+    <sdpi-item>
+        <div style="display: flex; align-items: center; margin: 20px 0 15px 0;">
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+            <p style="margin: 0 10px; font-size: 13px; font-weight: bold; white-space: nowrap;">
+                Optional settings
+            </p>
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+        </div>
     </sdpi-item>
 
     <sdpi-item label="Filter these lines (comma-separated)">
@@ -25,7 +79,8 @@
             placeholder="e.g., U1, 26A, 13A"
         ></sdpi-textfield>
         <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
-            Only show departures for specific lines (leave empty for all lines)
+            By default, the plugin will show the NEXT departure for any given transport line of the station you selected. There are stations where multiple lines depart, and the plugin will update to show the line that has the next departure.<br><br>
+            You can use the filter to show only one or a few of the lines and ignore the other ones.
         </p>
     </sdpi-item>
 
@@ -49,7 +104,7 @@
             default="true"
         ></sdpi-checkbox>
         <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
-            Display next 2 departures of the same line side-by-side on line 3
+            Display next 2 departures of the same line side-by-side
         </p>
     </sdpi-item>
 
@@ -61,6 +116,17 @@
         <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
             Display 2-pixel progress bar at bottom showing time until next refresh
         </p>
+    </sdpi-item>
+
+    <!-- Customize Colors Header -->
+    <sdpi-item>
+        <div style="display: flex; align-items: center; margin: 20px 0 15px 0;">
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+            <p style="margin: 0 10px; font-size: 13px; font-weight: bold; white-space: nowrap;">
+                Customize colors
+            </p>
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+        </div>
     </sdpi-item>
 
     <sdpi-item label="Background Color (default #000000)">
@@ -87,15 +153,32 @@
         </p>
     </sdpi-item>
 
-    <sdpi-item label="Progress Bar Color (default #d0cd08)">
+    <sdpi-item label="Progress Bar Color (default #525003)">
         <sdpi-textfield
             setting="progressBarColor"
             type="text"
-            placeholder="#d0cd08"
+            placeholder="#525003"
             pattern="^#[0-9A-Fa-f]{6}$"
         ></sdpi-textfield>
         <p style="margin: 5px 0 0 0; font-size: 11px; color: #999;">
-            Hex color code for progress bar (e.g., #d0cd08 for yellow)
+            Hex color code for progress bar (e.g., #525003 for dark yellow)
+        </p>
+    </sdpi-item>
+
+    <!-- Force Data Refresh Header -->
+    <sdpi-item>
+        <div style="display: flex; align-items: center; margin: 20px 0 15px 0;">
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+            <p style="margin: 0 10px; font-size: 13px; font-weight: bold; white-space: nowrap;">
+                Force data refresh
+            </p>
+            <div style="flex: 1; height: 1px; background-color: #666;"></div>
+        </div>
+    </sdpi-item>
+
+    <sdpi-item>
+        <p style="margin: 10px 0; font-size: 12px; line-height: 1.6;">
+            Clicking the button also forces the refresh of the line information :)
         </p>
     </sdpi-item>
 
@@ -107,57 +190,70 @@
     </sdpi-item>
 
     <script>
+        // Handle manual refresh button
         document.getElementById('refreshButton')?.addEventListener('click', () => {
             // Send message to plugin to trigger refresh
             if (window.$SD) {
                 window.$SD.api.sendToPlugin({ event: 'refreshNow' });
             }
         });
+
+        // Handle warning visibility based on RBL value
+        function updateWarningVisibility() {
+            const rblInput = document.getElementById('rblInput');
+            const warning = document.getElementById('defaultWarning');
+
+            if (rblInput && warning) {
+                // Get the actual value from the input field
+                const value = rblInput.value?.trim();
+
+                // Show warning ONLY if empty
+                if (!value || value === '') {
+                    warning.style.display = 'block';
+                } else {
+                    warning.style.display = 'none';
+                }
+            }
+        }
+
+        // Wait for Stream Deck SDK to be ready
+        if (window.$SD) {
+            // Update warning when settings are loaded
+            window.$SD.on('connected', () => {
+                setTimeout(updateWarningVisibility, 100);
+            });
+        }
+
+        // Check warning on page load and on input changes
+        window.addEventListener('load', () => {
+            // Delay initial check to allow SDK to populate values
+            setTimeout(updateWarningVisibility, 200);
+
+            const rblInput = document.getElementById('rblInput');
+            if (rblInput) {
+                rblInput.addEventListener('input', updateWarningVisibility);
+                rblInput.addEventListener('change', updateWarningVisibility);
+                // Also listen to SDK events that might change the value
+                if (window.$SD) {
+                    window.$SD.on('didReceiveSettings', updateWarningVisibility);
+                }
+            }
+        });
     </script>
 
     <sdpi-item>
-        <details>
-            <summary>How to find your RBL number</summary>
-            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
-                <strong>RBL numbers</strong> identify specific platforms and directions at Vienna transit stops.
-            </p>
-            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
-                <strong>Find your RBL:</strong><br>
-                1. Visit <a href="https://till.mabe.at/rbl/" target="_blank" style="color: #0066cc;">till.mabe.at/rbl/</a><br>
-                2. Search for your stop name<br>
-                3. Select the line and direction<br>
-                4. Copy the RBL number
-            </p>
-            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
-                <strong>Examples:</strong><br>
-                • Karlsplatz U1 → Leopoldau: RBL 4907<br>
-                • Schwedenplatz U4 → Hütteldorf: RBL 4201
-            </p>
-        </details>
-    </sdpi-item>
-
-    <sdpi-item>
-        <details>
-            <summary>About this plugin</summary>
-            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
-                Displays real-time departure information from Wiener Linien (Vienna public transport).
-            </p>
-            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
-                <strong>Display format:</strong><br>
-                Line number<br>
-                Destination<br>
-                Minutes until departure
-            </p>
-            <p style="margin: 10px 0; font-size: 12px; line-height: 1.5;">
-                <strong>Features:</strong><br>
-                • Auto-updates every 30 seconds<br>
-                • Press button to force refresh<br>
-                • Shows next departure only
-            </p>
-            <p style="margin: 10px 0; font-size: 11px; color: #666;">
-                Data: Wiener Linien / Stadt Wien (CC BY 4.0)
-            </p>
-        </details>
+        <p style="margin: 20px 0 10px 0; font-size: 13px; font-weight: bold;">
+            About
+        </p>
+        <p style="margin: 10px 0; font-size: 11px; line-height: 1.6; color: #999;">
+            For bugs or suggestions please contact me at <a href="https://bsky.app/profile/mikel.me" target="_blank" style="color: #0066cc;">@mikel.me</a> in bluesky
+        </p>
+        <p style="margin: 10px 0; font-size: 11px; line-height: 1.6; color: #999;">
+            This plugin was built thanks for the open information available from Stadt Wien <a href="https://data.wien.gv.at" target="_blank" style="color: #0066cc;">https://data.wien.gv.at</a>
+        </p>
+        <p style="margin: 10px 0; font-size: 11px; line-height: 1.6; color: #999;">
+            As well as thanks to <a href="https://mabe.at/" target="_blank" style="color: #0066cc;">.mabe</a> for creating the RBL/StopID search tool
+        </p>
     </sdpi-item>
 </body>
 
