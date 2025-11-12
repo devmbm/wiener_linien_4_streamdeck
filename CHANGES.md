@@ -130,7 +130,7 @@ Then visit http://localhost:23654/ and open the plugin console
 ### Method 2: Log Files
 Logs are written to:
 ```
-%USERPROFILE%/logs/com.leberkaese-mit-alles.wienerlinien.*.log
+%USERPROFILE%/logs/com.mikel-me.wienerlinien.*.log
 ```
 
 ### What to Look For

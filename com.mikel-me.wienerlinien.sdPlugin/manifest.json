@@ -1,0 +1,50 @@
+{
+	"Name": "Wiener Linien Information",
+	"Version": "0.1.0.0",
+	"Author": "mikel_me",
+	"Actions": [
+		{
+			"Name": "Vienna - Wiener Linien Departure Board",
+			"UUID": "com.mikel-me.wienerlinien.departure",
+			"Icon": "imgs/actions/wienerlinien_departures/icon",
+			"Tooltip": "Displays real-time departure information from Wiener Linien",
+			"PropertyInspectorPath": "ui/departure-monitor.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/wienerlinien_departures/icon",
+					"TitleAlignment": "top",
+					"FontSize": 14,
+					"TitleColor": "#d0cd08",
+					"ShowTitle": true
+				}
+			]
+		}
+	],
+	"Category": "Wiener Linien Information",
+	"CategoryIcon": "imgs/plugin/category-icon",
+	"CodePath": "bin/plugin.js",
+	"Description": "Real-time departure monitor for Wiener Linien (Vienna public transport)",
+	"Icon": "imgs/plugin/marketplace",
+	"SDKVersion": 2,
+	"Software": {
+		"MinimumVersion": "6.5"
+	},
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		},
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		}
+	],
+	"Nodejs": {
+		"Version": "20",
+		"Debug": "enabled"
+	},
+	"UUID": "com.mikel-me.wienerlinien"
+}

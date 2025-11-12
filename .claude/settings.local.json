@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(npm run build:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(cat:*)",
+      "Bash(streamdeck restart:*)",
+      "Bash(streamdeck pack:*)"
     ],
     "deny": [],
     "ask": []

@@ -44,7 +44,7 @@ This happens when you have an old action instance on your Stream Deck that no lo
 
 ### Solution 1: Restart Plugin
 ```bash
-streamdeck restart com.leberkaese-mit-alles.wienerlinien
+streamdeck restart com.mikel-me.wienerlinien
 ```
 
 ### Solution 2: Full Stream Deck Restart
@@ -56,7 +56,7 @@ streamdeck restart com.leberkaese-mit-alles.wienerlinien
 ```bash
 cd C:\Users\mkbas\vibecode\streamdeck_wienerlinien\wienerlinien
 npm run build
-streamdeck restart com.leberkaese-mit-alles.wienerlinien
+streamdeck restart com.mikel-me.wienerlinien
 ```
 
 ---
@@ -87,7 +87,7 @@ streamdeck restart com.leberkaese-mit-alles.wienerlinien
 
 ### Solution 1: Verify Link
 ```bash
-streamdeck link com.leberkaese-mit-alles.wienerlinien.sdPlugin
+streamdeck link com.mikel-me.wienerlinien.sdPlugin
 ```
 
 ### Solution 2: Check if Plugin is Loaded
@@ -98,7 +98,7 @@ streamdeck link com.leberkaese-mit-alles.wienerlinien.sdPlugin
 
 ### Solution 3: Validate Manifest
 ```bash
-streamdeck validate com.leberkaese-mit-alles.wienerlinien.sdPlugin
+streamdeck validate com.mikel-me.wienerlinien.sdPlugin
 ```
 
 ---
@@ -162,7 +162,7 @@ Use these for testing:
    rm -rf node_modules
    npm install
    npm run build
-   streamdeck restart com.leberkaese-mit-alles.wienerlinien
+   streamdeck restart com.mikel-me.wienerlinien
    ```
 
 3. **Check for TypeScript errors:**
@@ -172,9 +172,9 @@ Use these for testing:
    Should complete without errors
 
 4. **Verify all files exist:**
-   - `com.leberkaese-mit-alles.wienerlinien.sdPlugin/bin/plugin.js` ✓
-   - `com.leberkaese-mit-alles.wienerlinien.sdPlugin/ui/departure-monitor.html` ✓
-   - `com.leberkaese-mit-alles.wienerlinien.sdPlugin/manifest.json` ✓
+   - `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js` ✓
+   - `com.mikel-me.wienerlinien.sdPlugin/ui/departure-monitor.html` ✓
+   - `com.mikel-me.wienerlinien.sdPlugin/manifest.json` ✓
 
 ---
 
@@ -201,7 +201,7 @@ cd C:\Users\mkbas\vibecode\streamdeck_wienerlinien\wienerlinien
 npm run build
 
 # Restart plugin
-streamdeck restart com.leberkaese-mit-alles.wienerlinien
+streamdeck restart com.mikel-me.wienerlinien
 
 # Then in Stream Deck software:
 # 1. Remove all old instances of the action

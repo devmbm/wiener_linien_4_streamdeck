@@ -56,7 +56,7 @@ Kagran      ← Destination (yellow, original case, left-aligned)
    ```
 5. Link the plugin for development:
    ```bash
-   streamdeck link com.leberkaese-mit-alles.wienerlinien.sdPlugin
+   streamdeck link com.mikel-me.wienerlinien.sdPlugin
    ```
 
 ## Setup
@@ -113,7 +113,7 @@ wienerlinien/
 │   ├── types/
 │   │   └── wienerlinien.ts           # TypeScript type definitions
 │   └── plugin.ts                      # Plugin entry point
-├── com.leberkaese-mit-alles.wienerlinien.sdPlugin/
+├── com.mikel-me.wienerlinien.sdPlugin/
 │   ├── ui/
 │   │   └── departure-monitor.html    # Property Inspector UI
 │   ├── manifest.json                  # Plugin metadata

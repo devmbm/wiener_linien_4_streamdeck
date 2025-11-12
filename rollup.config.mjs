@@ -7,7 +7,7 @@ import path from "node:path";
 import url from "node:url";
 
 const isWatching = !!process.env.ROLLUP_WATCH;
-const sdPlugin = "com.leberkaese-mit-alles.wienerlinien.sdPlugin";
+const sdPlugin = "com.mikel-me.wienerlinien.sdPlugin";
 
 /**
  * @type {import('rollup').RollupOptions}

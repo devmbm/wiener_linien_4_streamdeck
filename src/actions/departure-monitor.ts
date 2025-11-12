@@ -8,7 +8,7 @@ import { createCanvas } from "@napi-rs/canvas";
  * Stream Deck action that displays real-time departure information from Wiener Linien
  * Shows: LINE_CODE, DESTINATION, and COUNTDOWN in minutes
  */
-@action({ UUID: "com.leberkaese-mit-alles.wienerlinien.departure" })
+@action({ UUID: "com.mikel-me.wienerlinien.departure" })
 export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 	private client = new WienerLinienClient();
 	private updateIntervals = new Map<string, NodeJS.Timeout>();
@@ -79,8 +79,9 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 
 		this.updateIntervals.set(action.id, interval);
 
-		// Set up progress bar updates if enabled
-		if (settings.showProgressBar) {
+		// Set up progress bar updates if enabled (default: true)
+		const showProgressBar = settings.showProgressBar !== undefined ? settings.showProgressBar : true;
+		if (showProgressBar) {
 			streamDeck.logger.info(`Starting progress bar for action ${action.id}`);
 			this.startProgressBar(action.id);
 		}
@@ -217,7 +218,8 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 				this.lastDepartureData.set(actionId, { first: firstDeparture, second: secondDeparture });
 
 				// Calculate initial progress if progress bar is enabled
-				const progressPercent = settings?.showProgressBar ? 0 : undefined;
+				const showProgressBar = settings?.showProgressBar !== undefined ? settings.showProgressBar : true;
+				const progressPercent = showProgressBar ? 0 : undefined;
 
 				// Render custom image with departure info
 				await this.renderDepartureImage(action, firstDeparture, secondDeparture, progressPercent);
@@ -232,7 +234,8 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 				this.lastDepartureData.set(actionId, { first: departure, second: null });
 
 				// Calculate initial progress if progress bar is enabled
-				const progressPercent = settings?.showProgressBar ? 0 : undefined;
+				const showProgressBar = settings?.showProgressBar !== undefined ? settings.showProgressBar : true;
+				const progressPercent = showProgressBar ? 0 : undefined;
 
 				// Render custom image with single departure info
 				await this.renderDepartureImage(action, departure, null, progressPercent);
@@ -508,7 +511,8 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 		if (!action) return;
 
 		const settings = this.actionSettings.get(actionId);
-		if (!settings?.showProgressBar) return;
+		const showProgressBar = settings?.showProgressBar !== undefined ? settings.showProgressBar : true;
+		if (!showProgressBar) return;
 
 		const lastUpdate = this.lastUpdateTimes.get(actionId);
 		if (!lastUpdate) return;

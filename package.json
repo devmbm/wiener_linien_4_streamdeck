@@ -1,7 +1,7 @@
 {
     "scripts": {
         "build": "rollup -c",
-        "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.leberkaese-mit-alles.wienerlinien\""
+        "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.mikel-me.wienerlinien\""
     },
     "type": "module",
     "devDependencies": {
