@@ -24,11 +24,15 @@ For experienced developers who just need the commands:
 # Install dependencies (first time only)
 npm install
 
+# Install all platform-specific binaries (for multi-platform package)
+npm install --force @napi-rs/canvas-darwin-x64 @napi-rs/canvas-darwin-arm64 @napi-rs/canvas-linux-x64-gnu
+
 # Development mode (auto-rebuild and restart)
 npm run watch
 
-# Production build and package
+# Production build and package (multi-platform)
 npm run build
+rm -rf com.mikel-me.wienerlinien.sdPlugin/node_modules
 mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
 cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
 streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
@@ -146,24 +150,44 @@ npm run build
 - Removes source maps
 - Creates optimized `bin/plugin.js` (~82 KB)
 
-#### Step 2: Copy Native Dependencies
+#### Step 2: Install Multi-Platform Binaries (First Time Only)
 
-The `@napi-rs/canvas` module must be included in the package:
+For a universal package that works on all platforms, install all platform-specific binaries:
 
 ```bash
+npm install --force @napi-rs/canvas-darwin-x64 @napi-rs/canvas-darwin-arm64 @napi-rs/canvas-linux-x64-gnu
+```
+
+**Platforms supported:**
+- Windows 64-bit (`canvas-win32-x64-msvc`) - Installed by default
+- macOS Intel (`canvas-darwin-x64`) - Needs manual install
+- macOS Apple Silicon (`canvas-darwin-arm64`) - Needs manual install
+- Linux 64-bit (`canvas-linux-x64-gnu`) - Needs manual install
+
+**Note:** The `--force` flag is required because npm normally only installs binaries for your current platform.
+
+#### Step 3: Copy Native Dependencies
+
+Copy ALL platform binaries to the plugin folder:
+
+```bash
+rm -rf com.mikel-me.wienerlinien.sdPlugin/node_modules
 mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
 cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
 ```
 
 **Why this is needed:**
 - Rollup cannot bundle native Node.js modules
-- The canvas library uses native C++ bindings
+- The canvas library uses native C++ bindings compiled for each platform
 - These files must be present at runtime
-- Files copied:
-  - `@napi-rs/canvas` - JavaScript wrapper
-  - `@napi-rs/canvas-win32-x64-msvc` - Native binary (25 MB)
+- Files copied (all platforms):
+  - `@napi-rs/canvas` - JavaScript wrapper (shared)
+  - `@napi-rs/canvas-win32-x64-msvc` - Windows binary (~25 MB)
+  - `@napi-rs/canvas-darwin-x64` - macOS Intel binary (~30 MB)
+  - `@napi-rs/canvas-darwin-arm64` - macOS ARM binary (~25 MB)
+  - `@napi-rs/canvas-linux-x64-gnu` - Linux binary (~31 MB)
 
-#### Step 3: Create Package
+#### Step 4: Create Package
 
 ```bash
 streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
@@ -171,17 +195,27 @@ streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
 
 **Output:**
 - File: `com.mikel-me.wienerlinien.streamDeckPlugin`
-- Size: ~35 MB (includes native binaries)
+- Size: ~52 MB (universal multi-platform package)
 - Location: Current directory
 
 **Package contents:**
 - `manifest.json` - Plugin metadata
-- `bin/plugin.js` - Compiled and minified code
-- `node_modules/@napi-rs/` - Native canvas library
+- `bin/plugin.js` - Compiled and minified code (~277 KB)
+- `node_modules/@napi-rs/canvas/` - JavaScript wrapper (shared)
+- `node_modules/@napi-rs/canvas-win32-x64-msvc/` - Windows binary (~25 MB)
+- `node_modules/@napi-rs/canvas-darwin-x64/` - macOS Intel binary (~30 MB)
+- `node_modules/@napi-rs/canvas-darwin-arm64/` - macOS ARM binary (~25 MB)
+- `node_modules/@napi-rs/canvas-linux-x64-gnu/` - Linux binary (~31 MB)
 - `ui/` - HTML configuration interface
 - `imgs/` - Icons and images
 
-#### Step 4: Verify the Package
+**Platform Support:**
+- ✅ Windows 10/11 (64-bit)
+- ✅ macOS 12+ (Intel)
+- ✅ macOS 12+ (Apple Silicon M1/M2/M3)
+- ✅ Linux (64-bit)
+
+#### Step 5: Verify the Package
 
 Check the package was created:
 
@@ -189,7 +223,7 @@ Check the package was created:
 ls -lh com.mikel-me.wienerlinien.streamDeckPlugin
 ```
 
-You should see a file around 35 MB in size.
+You should see a file around 52 MB in size (universal package with all platforms).
 
 ### Installing the Package
 
@@ -271,8 +305,8 @@ wienerlinien/
                      ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ 6. Distribution Package (.streamDeckPlugin)                │
-│    - Size: ~35 MB (includes native binaries)              │
-│    - Ready for installation                                 │
+│    - Size: ~52 MB (universal, all platforms)              │
+│    - Ready for installation on any supported platform      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -387,10 +421,10 @@ The `plugin.js` file doesn't exist or watch mode is interfering.
 
 ---
 
-### Problem: Package is too small (< 1 MB)
+### Problem: Package is too small (< 10 MB)
 
 **Symptom:**
-Package is only ~300 KB instead of ~35 MB.
+Package is only ~300 KB instead of ~52 MB (universal) or ~35 MB (single platform).
 
 **Cause:**
 Native dependencies not included.
@@ -400,7 +434,59 @@ Native dependencies not included.
 unzip -l com.mikel-me.wienerlinien.streamDeckPlugin | grep node_modules
 ```
 
-If empty, native modules are missing. Follow Step 2 in [Production Build & Packaging](#production-build--packaging).
+If empty, native modules are missing. Follow Steps 2-3 in [Production Build & Packaging](#production-build--packaging).
+
+---
+
+### Problem: Plugin works on Windows but not on macOS/Linux
+
+**Symptom:**
+- Plugin shows icon but no data on macOS or Linux
+- Works fine on Windows
+- No logs generated on the other platform
+
+**Cause:**
+Only Windows binaries were included in the package.
+
+**Solution:**
+Create a universal package with all platform binaries:
+
+```bash
+# Install all platform binaries
+npm install --force @napi-rs/canvas-darwin-x64 @napi-rs/canvas-darwin-arm64 @napi-rs/canvas-linux-x64-gnu
+
+# Rebuild with all platforms
+rm -rf com.mikel-me.wienerlinien.sdPlugin/node_modules
+mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
+cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
+
+# Repackage
+streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
+```
+
+**Verify all platforms are included:**
+```bash
+unzip -l com.mikel-me.wienerlinien.streamDeckPlugin | grep "skia\."
+```
+
+Should show:
+- `skia.win32-x64-msvc.node` (Windows)
+- `skia.darwin-x64.node` (macOS Intel)
+- `skia.darwin-arm64.node` (macOS Apple Silicon)
+- `skia.linux-x64-gnu.node` (Linux)
+
+---
+
+### Problem: macOS says "damaged" or can't verify developer
+
+**Symptom:**
+macOS prevents installation with "damaged" or "unidentified developer" message.
+
+**Solution:**
+```bash
+# On macOS, after installing the plugin:
+xattr -cr ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/com.mikel-me.wienerlinien.sdPlugin
+```
 
 ---
 
