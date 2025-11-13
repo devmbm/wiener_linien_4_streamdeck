@@ -7,7 +7,8 @@
       "Bash(streamdeck restart:*)",
       "Bash(streamdeck pack:*)",
       "Bash(unzip:*)",
-      "Bash(npm run watch:*)"
+      "Bash(npm run watch:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": []
