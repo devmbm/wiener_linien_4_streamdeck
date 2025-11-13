@@ -5,7 +5,9 @@
       "Bash(dir:*)",
       "Bash(cat:*)",
       "Bash(streamdeck restart:*)",
-      "Bash(streamdeck pack:*)"
+      "Bash(streamdeck pack:*)",
+      "Bash(unzip:*)",
+      "Bash(npm run watch:*)"
     ],
     "deny": [],
     "ask": []
