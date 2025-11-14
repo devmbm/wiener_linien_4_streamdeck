@@ -152,14 +152,15 @@ export function renderDepartureSVG(
 	let svg = createBaseSVG(options);
 
 	// Line 1: Line code (larger, bold)
+	// Using y position + font-size to simulate canvas textBaseline='top'
 	const lineCode = escapeXML(firstDeparture.line);
 	svg += `
-	<text x="10" y="10" font-family="sans-serif" font-size="36" font-weight="bold" fill="${textColor}" dominant-baseline="hanging">${lineCode}</text>`;
+	<text x="10" y="46" font-family="sans-serif" font-size="36" font-weight="bold" fill="${textColor}">${lineCode}</text>`;
 
 	// Line 2: Destination (Title Case)
 	const destination = escapeXML(toTitleCase(firstDeparture.towards));
 	svg += `
-	<text x="10" y="57" font-family="sans-serif" font-size="22" fill="${textColor}" dominant-baseline="hanging">${destination}</text>`;
+	<text x="10" y="79" font-family="sans-serif" font-size="22" fill="${textColor}">${destination}</text>`;
 
 	// Line 3: Countdown(s)
 	if (secondDeparture) {
@@ -169,16 +170,16 @@ export function renderDepartureSVG(
 
 		// First departure on the left
 		svg += `
-	<text x="10" y="95" font-family="sans-serif" font-size="28" font-weight="bold" fill="${textColor}" dominant-baseline="hanging">${firstCountdown}</text>`;
+	<text x="10" y="123" font-family="sans-serif" font-size="28" font-weight="bold" fill="${textColor}">${firstCountdown}</text>`;
 
 		// Second departure in the center
 		svg += `
-	<text x="72" y="95" font-family="sans-serif" font-size="28" font-weight="bold" fill="${textColor}" text-anchor="middle" dominant-baseline="hanging">${secondCountdown}</text>`;
+	<text x="72" y="123" font-family="sans-serif" font-size="28" font-weight="bold" fill="${textColor}" text-anchor="middle">${secondCountdown}</text>`;
 	} else {
 		// Single departure on the left
 		const countdownDisplay = firstDeparture.countdown <= 0 ? '*' : String(firstDeparture.countdown);
 		svg += `
-	<text x="10" y="95" font-family="sans-serif" font-size="28" font-weight="bold" fill="${textColor}" dominant-baseline="hanging">${countdownDisplay}</text>`;
+	<text x="10" y="123" font-family="sans-serif" font-size="28" font-weight="bold" fill="${textColor}">${countdownDisplay}</text>`;
 	}
 
 	// Draw progress bar if specified (bottom 2 pixels)
