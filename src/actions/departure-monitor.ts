@@ -2,7 +2,16 @@ import { action, DidReceiveSettingsEvent, KeyDownEvent, SingletonAction, WillApp
 import streamDeck from "@elgato/streamdeck";
 import { WienerLinienClient } from "../api/wienerlinien-client";
 import type { DepartureInfo } from "../types/wienerlinien";
-import { createCanvas } from "@napi-rs/canvas";
+import {
+	renderDepartureSVG,
+	renderNoDeparturesSVG,
+	renderErrorSVG,
+	renderNoLineFoundSVG,
+	renderNoStationSetSVG,
+	renderInvalidRBLSVG,
+	svgToDataURL,
+	type DepartureData
+} from "../utils/svg-renderer";
 
 /**
  * Stream Deck action that displays real-time departure information from Wiener Linien
@@ -252,126 +261,66 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 	}
 
 	/**
-	 * Render a custom image with departure information
+	 * Render a custom image with departure information using SVG
 	 */
 	private async renderDepartureImage(action: any, firstDeparture: DepartureInfo | null | undefined, secondDeparture?: DepartureInfo | null | undefined, progressPercent?: number): Promise<void> {
 		// Clear any error title when we're rendering new content
 		await action.setTitle("");
 
-		// Create canvas using node-canvas
-		const canvas = createCanvas(144, 144);
-		const ctx = canvas.getContext('2d');
-
-		if (!ctx) return;
-
 		// Get settings for custom colors
 		const settings = this.actionSettings.get(action.id);
-		const bgColor = settings?.backgroundColor || '#000000';
-		const textColor = settings?.textColor || '#d0cd08';
-		const progressColor = settings?.progressBarColor || '#525003';
+		const renderOptions = {
+			backgroundColor: settings?.backgroundColor || '#000000',
+			textColor: settings?.textColor || '#d0cd08',
+			progressBarColor: settings?.progressBarColor || '#525003'
+		};
 
-		// Background
-		ctx.fillStyle = bgColor;
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-		// Text color
-		ctx.fillStyle = textColor;
-		ctx.textAlign = 'left';
-		ctx.textBaseline = 'top';
+		let svg: string;
 
 		if (firstDeparture === null) {
 			// No departures
-			ctx.font = '16px sans-serif';
-			ctx.fillText('No', 10, 20);
-			ctx.fillText('Departures', 10, 45);
-			ctx.fillText('Soon', 10, 70);
+			svg = renderNoDeparturesSVG(renderOptions);
 		} else if (firstDeparture === undefined) {
 			// Error
-			ctx.font = '16px sans-serif';
-			ctx.fillText('Error', 10, 20);
-			ctx.fillText('Fetching', 10, 45);
-			ctx.fillText('Data', 10, 70);
+			svg = renderErrorSVG(renderOptions);
 		} else {
-			// Line 1: Line code (larger)
-			ctx.font = 'bold 36px sans-serif';
-			ctx.fillText(firstDeparture.line, 10, 10);
+			// Render departure data
+			const departureData: DepartureData = {
+				line: firstDeparture.line,
+				towards: firstDeparture.towards,
+				countdown: firstDeparture.countdown
+			};
 
-			// Line 2: Destination (Title Case, slightly larger)
-			ctx.font = '22px sans-serif';
-			let destination = firstDeparture.towards;
-			// Convert to Title Case
-			destination = this.toTitleCase(destination);
-			ctx.fillText(destination, 10, 57);
+			const secondDepartureData: DepartureData | null = secondDeparture ? {
+				line: secondDeparture.line,
+				towards: secondDeparture.towards,
+				countdown: secondDeparture.countdown
+			} : null;
 
-			// Line 3: Countdown(s)
-			ctx.font = 'bold 28px sans-serif';
-
-			if (secondDeparture) {
-				// Two departures: left and center
-				const firstCountdown = firstDeparture.countdown <= 0 ? '*' : `${firstDeparture.countdown}`;
-				const secondCountdown = secondDeparture.countdown <= 0 ? '*' : `${secondDeparture.countdown}`;
-
-				// First departure on the left
-				ctx.textAlign = 'left';
-				ctx.fillText(firstCountdown, 10, 95);
-
-				// Second departure in the center
-				ctx.textAlign = 'center';
-				ctx.fillText(secondCountdown, 72, 95); // Center at 144/2 = 72
-			} else {
-				// Single departure on the left
-				ctx.textAlign = 'left';
-				const countdownDisplay = firstDeparture.countdown <= 0 ? '*' : `${firstDeparture.countdown}`;
-				ctx.fillText(countdownDisplay, 10, 95);
-			}
+			svg = renderDepartureSVG(departureData, secondDepartureData, progressPercent, renderOptions);
 		}
 
-		// Draw progress bar if specified (bottom 2 pixels)
-		if (progressPercent !== undefined && progressPercent >= 0) {
-			const progressWidth = Math.floor((canvas.width * progressPercent) / 100);
-			ctx.fillStyle = progressColor;
-			ctx.fillRect(0, canvas.height - 2, progressWidth, 2);
-		}
-
-		// Convert canvas to base64 and set as image
-		const buffer = canvas.toBuffer('image/png');
-		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-		await action.setImage(base64);
+		// Convert SVG to data URL and set as image
+		const dataUrl = svgToDataURL(svg);
+		await action.setImage(dataUrl);
 	}
 
 	/**
 	 * Render "No line found" message when line filter doesn't match any departures
 	 */
 	private async renderNoLineFoundImage(action: any): Promise<void> {
-		const canvas = createCanvas(144, 144);
-		const ctx = canvas.getContext('2d');
-
-		if (!ctx) return;
-
 		// Get settings for custom colors
 		const settings = this.actionSettings.get(action.id);
-		const bgColor = settings?.backgroundColor || '#000000';
-		const textColor = settings?.textColor || '#d0cd08';
+		const renderOptions = {
+			backgroundColor: settings?.backgroundColor || '#000000',
+			textColor: settings?.textColor || '#d0cd08'
+		};
 
-		// Background
-		ctx.fillStyle = bgColor;
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		// Generate SVG and convert to data URL
+		const svg = renderNoLineFoundSVG(renderOptions);
+		const dataUrl = svgToDataURL(svg);
 
-		// Text color
-		ctx.fillStyle = textColor;
-		ctx.textAlign = 'left';
-		ctx.textBaseline = 'top';
-
-		// Show "No line found" message
-		ctx.font = '16px sans-serif';
-		ctx.fillText('No', 10, 40);
-		ctx.fillText('Line', 10, 65);
-		ctx.fillText('Found', 10, 90);
-
-		// Convert canvas to base64 and set as image
-		const buffer = canvas.toBuffer('image/png');
-		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-		await action.setImage(base64);
+		await action.setImage(dataUrl);
 		await action.setTitle("");
 	}
 
@@ -379,35 +328,18 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 	 * Render "No Station set in Settings" message when RBL is not configured
 	 */
 	private async renderNoStationSetImage(action: any): Promise<void> {
-		const canvas = createCanvas(144, 144);
-		const ctx = canvas.getContext('2d');
-
-		if (!ctx) return;
-
 		// Get settings for custom colors
 		const settings = this.actionSettings.get(action.id);
-		const bgColor = settings?.backgroundColor || '#000000';
-		const textColor = settings?.textColor || '#d0cd08';
+		const renderOptions = {
+			backgroundColor: settings?.backgroundColor || '#000000',
+			textColor: settings?.textColor || '#d0cd08'
+		};
 
-		// Background
-		ctx.fillStyle = bgColor;
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		// Generate SVG and convert to data URL
+		const svg = renderNoStationSetSVG(renderOptions);
+		const dataUrl = svgToDataURL(svg);
 
-		// Text color
-		ctx.fillStyle = textColor;
-		ctx.textAlign = 'left';
-		ctx.textBaseline = 'top';
-
-		// Show "No Station set in Settings" message
-		ctx.font = '20px sans-serif';
-		ctx.fillText('No Station', 10, 30);
-		ctx.fillText('set in', 10, 60);
-		ctx.fillText('Settings', 10, 90);
-
-		// Convert canvas to base64 and set as image
-		const buffer = canvas.toBuffer('image/png');
-		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-		await action.setImage(base64);
+		await action.setImage(dataUrl);
 		await action.setTitle("");
 	}
 
@@ -415,35 +347,18 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 	 * Render "Invalid RBL Number" message when RBL is not a valid number
 	 */
 	private async renderInvalidRBLImage(action: any): Promise<void> {
-		const canvas = createCanvas(144, 144);
-		const ctx = canvas.getContext('2d');
-
-		if (!ctx) return;
-
 		// Get settings for custom colors
 		const settings = this.actionSettings.get(action.id);
-		const bgColor = settings?.backgroundColor || '#000000';
-		const textColor = settings?.textColor || '#d0cd08';
+		const renderOptions = {
+			backgroundColor: settings?.backgroundColor || '#000000',
+			textColor: settings?.textColor || '#d0cd08'
+		};
 
-		// Background
-		ctx.fillStyle = bgColor;
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
+		// Generate SVG and convert to data URL
+		const svg = renderInvalidRBLSVG(renderOptions);
+		const dataUrl = svgToDataURL(svg);
 
-		// Text color
-		ctx.fillStyle = textColor;
-		ctx.textAlign = 'left';
-		ctx.textBaseline = 'top';
-
-		// Show "Invalid RBL Number" message
-		ctx.font = '16px sans-serif';
-		ctx.fillText('Invalid', 10, 20);
-		ctx.fillText('RBL', 10, 45);
-		ctx.fillText('Number', 10, 70);
-
-		// Convert canvas to base64 and set as image
-		const buffer = canvas.toBuffer('image/png');
-		const base64 = `data:image/png;base64,${buffer.toString('base64')}`;
-		await action.setImage(base64);
+		await action.setImage(dataUrl);
 		await action.setTitle("");
 	}
 
@@ -469,13 +384,6 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 
 		// Format: line name, destination, countdown
 		return `${line}\n${destination}\n${countdownDisplay}`;
-	}
-
-	/**
-	 * Convert string to Title Case (capitalize first letter of each word and after hyphens)
-	 */
-	private toTitleCase(str: string): string {
-		return str.toLowerCase().replace(/(?:^|\s|-)\w/g, (match) => match.toUpperCase());
 	}
 
 	/**

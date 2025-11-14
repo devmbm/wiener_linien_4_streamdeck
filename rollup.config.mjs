@@ -14,7 +14,6 @@ const sdPlugin = "com.mikel-me.wienerlinien.sdPlugin";
  */
 const config = {
 	input: "src/plugin.ts",
-	external: ["@napi-rs/canvas"],
 	output: {
 		file: `${sdPlugin}/bin/plugin.js`,
 		sourcemap: isWatching,
