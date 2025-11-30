@@ -9,6 +9,10 @@ export interface SVGRenderOptions {
 	backgroundColor?: string;
 	textColor?: string;
 	progressBarColor?: string;
+	overrideTextLine1?: string;
+	keepLineNumberInParenthesis?: boolean;
+	textLine1Size?: number;
+	textLine2Size?: number;
 }
 
 /**
@@ -148,19 +152,34 @@ export function renderDepartureSVG(
 	const height = options.height || 144;
 	const textColor = options.textColor || '#d0cd08';
 	const progressColor = options.progressBarColor || '#525003';
+	const line1FontSize = options.textLine1Size || 36;
+	const line2FontSize = options.textLine2Size || 22;
 
 	let svg = createBaseSVG(options);
 
-	// Line 1: Line code (larger, bold)
-	// Using y position + font-size to simulate canvas textBaseline='top'
-	const lineCode = escapeXML(firstDeparture.line);
+	// Line 1: Line code (larger, bold) - with optional override
+	let lineCode: string;
+	if (options.overrideTextLine1 && options.overrideTextLine1.trim() !== '') {
+		// Use custom override text
+		if (options.keepLineNumberInParenthesis !== false) {
+			// Default: keep line number in parenthesis
+			lineCode = escapeXML(`${options.overrideTextLine1.trim()} (${firstDeparture.line})`);
+		} else {
+			// Don't show line number
+			lineCode = escapeXML(options.overrideTextLine1.trim());
+		}
+	} else {
+		// Default: show actual line number
+		lineCode = escapeXML(firstDeparture.line);
+	}
+
 	svg += `
-	<text x="10" y="46" font-family="sans-serif" font-size="36" font-weight="bold" fill="${textColor}">${lineCode}</text>`;
+	<text x="10" y="46" font-family="sans-serif" font-size="${line1FontSize}" font-weight="bold" fill="${textColor}">${lineCode}</text>`;
 
 	// Line 2: Destination (Title Case)
 	const destination = escapeXML(toTitleCase(firstDeparture.towards));
 	svg += `
-	<text x="10" y="79" font-family="sans-serif" font-size="22" fill="${textColor}">${destination}</text>`;
+	<text x="10" y="79" font-family="sans-serif" font-size="${line2FontSize}" fill="${textColor}">${destination}</text>`;
 
 	// Line 3: Countdown(s)
 	if (secondDeparture) {

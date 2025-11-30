@@ -1,6 +1,6 @@
 # How to Compile the Wiener Linien Stream Deck Plugin
 
-This guide provides step-by-step instructions for compiling and packaging the Wiener Linien Stream Deck plugin. It includes both beginner-friendly instructions and technical details for advanced users and AI assistants.
+This guide provides step-by-step instructions for compiling and packaging the Wiener Linien Stream Deck plugin.
 
 ---
 
@@ -24,17 +24,11 @@ For experienced developers who just need the commands:
 # Install dependencies (first time only)
 npm install
 
-# Install all platform-specific binaries (for multi-platform package)
-npm install --force @napi-rs/canvas-darwin-x64 @napi-rs/canvas-darwin-arm64 @napi-rs/canvas-linux-x64-gnu
-
 # Development mode (auto-rebuild and restart)
 npm run watch
 
-# Production build and package (multi-platform)
+# Production build and package
 npm run build
-rm -rf com.mikel-me.wienerlinien.sdPlugin/node_modules
-mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
-cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
 streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
 ```
 
@@ -64,7 +58,7 @@ streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
 
 1. Navigate to the project directory:
    ```bash
-   cd c:/Users/mkbas/vibecode/streamdeck_wienerlinien/wienerlinien
+   cd wienerlinien
    ```
 
 2. Install project dependencies:
@@ -75,7 +69,6 @@ streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
 This installs:
 - Build tools (Rollup, TypeScript, plugins)
 - Stream Deck SDK (`@elgato/streamdeck`)
-- Native canvas library (`@napi-rs/canvas`)
 - Development tools (`@elgato/cli`)
 
 ---
@@ -98,35 +91,33 @@ Development mode provides automatic rebuilding and hot-reloading:
    - Includes source maps for easier debugging
 
 2. **What happens:**
-   - Rollup monitors your source files
-   - On save, it compiles TypeScript → JavaScript
-   - Bundles everything into `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js`
-   - Attempts to restart the plugin (if it's linked to Stream Deck)
+   - Initial compilation runs
+   - Plugin automatically restarts in Stream Deck
+   - Any file changes in `src/` trigger recompilation
+   - Plugin restarts after each successful build
 
-3. **First-time setup (if plugin not found):**
-   ```bash
-   # Link the plugin to Stream Deck for development
-   streamdeck link com.mikel-me.wienerlinien.sdPlugin
-
-   # Restart the plugin
-   streamdeck restart com.mikel-me.wienerlinien
-   ```
-
-4. **Stop watch mode:**
+3. **Stop watch mode:**
    - Press `Ctrl+C` in the terminal
 
-### Making Changes
+### Manual Development Build
 
-1. Edit files in the `src/` directory:
-   - `src/plugin.ts` - Main entry point
-   - `src/actions/departure-monitor.ts` - Action logic
-   - `src/api/wienerlinien-client.ts` - API integration
+If you prefer to build manually without watch mode:
 
-2. Save the file
+```bash
+npm run build
+streamdeck restart com.mikel-me.wienerlinien
+```
 
-3. Watch mode automatically rebuilds
+### Viewing Logs
 
-4. Check Stream Deck to see your changes
+Stream Deck plugin logs are written to the console. When running `npm run watch`, you'll see:
+- Build output from Rollup
+- TypeScript compilation warnings/errors
+- Plugin restart confirmations
+
+To view runtime logs from the plugin itself, check the Stream Deck logs directory:
+- **Windows:** `%APPDATA%\Elgato\StreamDeck\logs`
+- **macOS:** `~/Library/Logs/ElgatoStreamDeck`
 
 ---
 
@@ -134,60 +125,25 @@ Development mode provides automatic rebuilding and hot-reloading:
 
 ### Creating a Distribution Package
 
-Follow these steps to create a `.streamDeckPlugin` file for distribution:
+To create a `.streamDeckPlugin` file for distribution:
 
-#### Step 1: Production Build
-
-Stop watch mode (if running) and create a production build:
+#### Step 1: Clean Build
 
 ```bash
 npm run build
 ```
 
 **What this does:**
-- Compiles TypeScript with production settings
-- Minifies the code using Terser
-- Removes source maps
-- Creates optimized `bin/plugin.js` (~82 KB)
+- Compiles all TypeScript files from `src/` into a single JavaScript bundle
+- Minifies the code using Terser for smaller file size
+- Outputs to `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js`
+- Generates source maps (for debugging, not included in package)
 
-#### Step 2: Install Multi-Platform Binaries (First Time Only)
+**Output:**
+- File: `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js`
+- Size: ~84 KB (minified)
 
-For a universal package that works on all platforms, install all platform-specific binaries:
-
-```bash
-npm install --force @napi-rs/canvas-darwin-x64 @napi-rs/canvas-darwin-arm64 @napi-rs/canvas-linux-x64-gnu
-```
-
-**Platforms supported:**
-- Windows 64-bit (`canvas-win32-x64-msvc`) - Installed by default
-- macOS Intel (`canvas-darwin-x64`) - Needs manual install
-- macOS Apple Silicon (`canvas-darwin-arm64`) - Needs manual install
-- Linux 64-bit (`canvas-linux-x64-gnu`) - Needs manual install
-
-**Note:** The `--force` flag is required because npm normally only installs binaries for your current platform.
-
-#### Step 3: Copy Native Dependencies
-
-Copy ALL platform binaries to the plugin folder:
-
-```bash
-rm -rf com.mikel-me.wienerlinien.sdPlugin/node_modules
-mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
-cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
-```
-
-**Why this is needed:**
-- Rollup cannot bundle native Node.js modules
-- The canvas library uses native C++ bindings compiled for each platform
-- These files must be present at runtime
-- Files copied (all platforms):
-  - `@napi-rs/canvas` - JavaScript wrapper (shared)
-  - `@napi-rs/canvas-win32-x64-msvc` - Windows binary (~25 MB)
-  - `@napi-rs/canvas-darwin-x64` - macOS Intel binary (~30 MB)
-  - `@napi-rs/canvas-darwin-arm64` - macOS ARM binary (~25 MB)
-  - `@napi-rs/canvas-linux-x64-gnu` - Linux binary (~31 MB)
-
-#### Step 4: Create Package
+#### Step 2: Create Package
 
 ```bash
 streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
@@ -195,27 +151,25 @@ streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
 
 **Output:**
 - File: `com.mikel-me.wienerlinien.streamDeckPlugin`
-- Size: ~52 MB (universal multi-platform package)
+- Size: ~52 KB (compressed)
 - Location: Current directory
+- Total files: 11
 
 **Package contents:**
 - `manifest.json` - Plugin metadata
-- `bin/plugin.js` - Compiled and minified code (~277 KB)
-- `node_modules/@napi-rs/canvas/` - JavaScript wrapper (shared)
-- `node_modules/@napi-rs/canvas-win32-x64-msvc/` - Windows binary (~25 MB)
-- `node_modules/@napi-rs/canvas-darwin-x64/` - macOS Intel binary (~30 MB)
-- `node_modules/@napi-rs/canvas-darwin-arm64/` - macOS ARM binary (~25 MB)
-- `node_modules/@napi-rs/canvas-linux-x64-gnu/` - Linux binary (~31 MB)
-- `ui/` - HTML configuration interface
-- `imgs/` - Icons and images
+- `bin/plugin.js` - Compiled and minified code (~84 KB)
+- `ui/departure-monitor.html` - Property Inspector configuration interface
+- `imgs/` - Plugin icons and images
 
 **Platform Support:**
 - ✅ Windows 10/11 (64-bit)
 - ✅ macOS 12+ (Intel)
-- ✅ macOS 12+ (Apple Silicon M1/M2/M3)
+- ✅ macOS 12+ (Apple Silicon M1/M2/M3/M4)
 - ✅ Linux (64-bit)
 
-#### Step 5: Verify the Package
+Note: This plugin uses pure SVG rendering, so no platform-specific native binaries are required!
+
+#### Step 3: Verify the Package
 
 Check the package was created:
 
@@ -223,7 +177,7 @@ Check the package was created:
 ls -lh com.mikel-me.wienerlinien.streamDeckPlugin
 ```
 
-You should see a file around 52 MB in size (universal package with all platforms).
+You should see a file around 52 KB in size.
 
 ### Installing the Package
 
@@ -247,6 +201,8 @@ wienerlinien/
 │   │   └── departure-monitor.ts           # Main action logic
 │   ├── api/
 │   │   └── wienerlinien-client.ts        # API calls
+│   ├── utils/
+│   │   └── svg-renderer.ts               # Pure SVG rendering (no canvas!)
 │   └── types/
 │       └── wienerlinien.ts               # Type definitions
 │
@@ -256,296 +212,118 @@ wienerlinien/
 │   │   ├── plugin.js                     # COMPILED OUTPUT
 │   │   ├── plugin.js.map                 # Source map (dev only)
 │   │   └── package.json                  # ES module marker
-│   ├── node_modules/                      # Native dependencies (for package)
-│   │   └── @napi-rs/
-│   │       ├── canvas/                   # Canvas JS wrapper
-│   │       └── canvas-win32-x64-msvc/    # Native binary
 │   ├── ui/
-│   │   └── departure-monitor.html        # Settings UI
-│   └── imgs/                              # Icons
+│   │   └── departure-monitor.html        # Property Inspector UI
+│   └── imgs/                              # Icons and images
 │
-├── package.json                           # Build scripts & dependencies
-├── tsconfig.json                          # TypeScript config
-├── rollup.config.mjs                      # Build configuration
-└── com.mikel-me.wienerlinien.streamDeckPlugin  # DISTRIBUTION (ZIP)
+├── package.json                           # Project dependencies & scripts
+├── rollup.config.js                       # Build configuration
+└── tsconfig.json                          # TypeScript configuration
 ```
 
 ### Build Pipeline
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Source Files (src/*.ts)                                  │
-└────────────────────┬────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 2. Rollup + TypeScript Plugin                              │
-│    - Compiles TypeScript → JavaScript                      │
-│    - Bundles all imports                                    │
-│    - Resolves dependencies from node_modules               │
-│    - Excludes @napi-rs/canvas (marked as external)         │
-└────────────────────┬────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 3. JavaScript Bundle (bin/plugin.js)                       │
-│    - Watch mode: ~277 KB (unminified, with source maps)   │
-│    - Production: ~82 KB (minified, no source maps)         │
-└────────────────────┬────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 4. Add Native Dependencies (manual step)                   │
-│    - Copy @napi-rs/canvas to .sdPlugin/node_modules/       │
-└────────────────────┬────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 5. Stream Deck CLI (streamdeck pack)                       │
-│    - Validates manifest.json                                │
-│    - Creates ZIP archive                                    │
-│    - Renames to .streamDeckPlugin                          │
-└────────────────────┬────────────────────────────────────────┘
-                     ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 6. Distribution Package (.streamDeckPlugin)                │
-│    - Size: ~52 MB (universal, all platforms)              │
-│    - Ready for installation on any supported platform      │
-└─────────────────────────────────────────────────────────────┘
-```
+1. **TypeScript Compilation**
+   - Source: `src/**/*.ts`
+   - Compiler: TypeScript 5.x
+   - Target: ES2022 (modern JavaScript)
+   - Module system: ES modules
 
-### Key Differences: Watch vs Production
+2. **Module Bundling**
+   - Tool: Rollup
+   - Entry: `src/plugin.ts`
+   - Output: `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js`
+   - Format: ES module
 
-| Aspect | Watch Mode (`npm run watch`) | Production (`npm run build`) |
-|--------|------------------------------|------------------------------|
-| **Minification** | No (readable code) | Yes (using Terser) |
-| **Source Maps** | Yes (for debugging) | No |
-| **File Size** | ~277 KB | ~82 KB |
-| **Auto-restart** | Yes | No |
-| **Use Case** | Development/testing | Distribution |
+3. **Code Optimization**
+   - Minification: Terser plugin
+   - Tree shaking: Removes unused code
+   - Result: ~84 KB bundle
 
-### Why Native Dependencies Matter
-
-The `@napi-rs/canvas` library is special:
-
-1. **Native Module**: Written in Rust, compiled to native code
-2. **Cannot be Bundled**: Rollup cannot include binary files
-3. **Runtime Requirement**: Must be available when plugin executes
-4. **Platform Specific**: Different binaries for Windows/Mac/Linux
-
-**In `rollup.config.mjs`:**
-```javascript
-external: ["@napi-rs/canvas"]  // Don't try to bundle this
-```
-
-**This means:**
-- The import statement remains in compiled code
-- Stream Deck's Node.js runtime resolves it at runtime
-- We must manually include it in the package
-
----
-
-## Troubleshooting
-
-### Problem: "Plugin not found" error
-
-**Symptom:**
-```
-✖️ Restarting failed
-Plugin not found: com.mikel-me.wienerlinien
-```
-
-**Solution:**
-Link the plugin first:
-```bash
-streamdeck link com.mikel-me.wienerlinien.sdPlugin
-streamdeck restart com.mikel-me.wienerlinien
-```
-
----
-
-### Problem: Package installs but doesn't work
-
-**Symptom:**
-- Plugin shows only icon on button
-- No departure data displays
-- Works in watch mode but not when packaged
-
-**Cause:**
-Native dependencies not included in package.
-
-**Solution:**
-Ensure you copied native modules before packaging:
-```bash
-# Check if node_modules exists in .sdPlugin
-ls com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
-
-# If not, copy them:
-mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
-cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
-
-# Repackage
-streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
-```
-
----
-
-### Problem: Build fails with TypeScript errors
-
-**Symptom:**
-```
-error TS18048: 'settings' is possibly 'undefined'.
-```
-
-**Note:**
-These are warnings, not errors. The build still succeeds. The code includes runtime checks for undefined values.
-
-**To suppress (optional):**
-Add `// @ts-ignore` before the line, but this is not recommended as the code handles it correctly.
-
----
-
-### Problem: "CodePath file not found" during packaging
-
-**Symptom:**
-```
-28:14  error    CodePath file not found, 'bin/plugin.js'
-```
-
-**Cause:**
-The `plugin.js` file doesn't exist or watch mode is interfering.
-
-**Solution:**
-1. Stop watch mode (Ctrl+C)
-2. Run production build:
-   ```bash
-   npm run build
-   ```
-3. Try packaging again
-
----
-
-### Problem: Package is too small (< 10 MB)
-
-**Symptom:**
-Package is only ~300 KB instead of ~52 MB (universal) or ~35 MB (single platform).
-
-**Cause:**
-Native dependencies not included.
-
-**Check:**
-```bash
-unzip -l com.mikel-me.wienerlinien.streamDeckPlugin | grep node_modules
-```
-
-If empty, native modules are missing. Follow Steps 2-3 in [Production Build & Packaging](#production-build--packaging).
-
----
-
-### Problem: Plugin works on Windows but not on macOS/Linux
-
-**Symptom:**
-- Plugin shows icon but no data on macOS or Linux
-- Works fine on Windows
-- No logs generated on the other platform
-
-**Cause:**
-Only Windows binaries were included in the package.
-
-**Solution:**
-Create a universal package with all platform binaries:
-
-```bash
-# Install all platform binaries
-npm install --force @napi-rs/canvas-darwin-x64 @napi-rs/canvas-darwin-arm64 @napi-rs/canvas-linux-x64-gnu
-
-# Rebuild with all platforms
-rm -rf com.mikel-me.wienerlinien.sdPlugin/node_modules
-mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
-cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
-
-# Repackage
-streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
-```
-
-**Verify all platforms are included:**
-```bash
-unzip -l com.mikel-me.wienerlinien.streamDeckPlugin | grep "skia\."
-```
-
-Should show:
-- `skia.win32-x64-msvc.node` (Windows)
-- `skia.darwin-x64.node` (macOS Intel)
-- `skia.darwin-arm64.node` (macOS Apple Silicon)
-- `skia.linux-x64-gnu.node` (Linux)
-
----
-
-### Problem: macOS says "damaged" or can't verify developer
-
-**Symptom:**
-macOS prevents installation with "damaged" or "unidentified developer" message.
-
-**Solution:**
-```bash
-# On macOS, after installing the plugin:
-xattr -cr ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/com.mikel-me.wienerlinien.sdPlugin
-```
-
----
-
-## Technical Reference
+4. **SVG Rendering**
+   - No native dependencies required
+   - Pure SVG generation in `svg-renderer.ts`
+   - Renders all button states (departures, errors, loading)
+   - Cross-platform compatible
 
 ### Configuration Files
 
 #### `package.json`
 
-Defines build scripts and dependencies:
+Defines project scripts and dependencies:
 
 ```json
 {
-  "name": "com.mikel-me.wienerlinien",
-  "version": "0.1.0",
-  "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.mikel-me.wienerlinien\""
   },
+  "type": "module",
   "dependencies": {
-    "@elgato/streamdeck": "^1.0.0",
-    "@napi-rs/canvas": "^0.1.59"
+    "@elgato/streamdeck": "^1.0.0"
   },
   "devDependencies": {
-    "@elgato/cli": "^1.0.0",
-    "rollup": "^4.0.0",
-    "typescript": "^5.0.0",
-    // ... Rollup plugins
+    "@elgato/cli": "^1.5.1",
+    "@rollup/plugin-commonjs": "^28.0.0",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.2",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "rollup": "^4.0.2",
+    "typescript": "^5.2.2"
   }
 }
 ```
 
-#### `rollup.config.mjs`
+#### `rollup.config.js`
 
-Configures the build process:
+Rollup bundler configuration:
 
 ```javascript
+import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
+import nodeResolve from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
+import typescript from '@rollup/plugin-typescript';
+
 export default {
-  input: "src/plugin.ts",
+  input: 'src/plugin.ts',
   output: {
-    file: "com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js",
-    sourcemap: isWatching,  // Only in watch mode
-    format: "esm"
+    file: 'com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js',
+    sourcemap: true,
+    format: 'es'
   },
-  external: ["@napi-rs/canvas"],  // Don't bundle native module
   plugins: [
-    typescript(),        // Compile TypeScript
-    json(),             // Import JSON files
-    nodeResolve(),      // Resolve node_modules
-    commonjs(),         // Convert CommonJS to ESM
-    !isWatching && terser()  // Minify in production
+    typescript({
+      tsconfig: './tsconfig.json'
+    }),
+    nodeResolve({
+      preferBuiltins: true,
+      exportConditions: ['node']
+    }),
+    commonjs(),
+    json(),
+    terser({
+      format: {
+        comments: false
+      }
+    })
   ]
-}
+};
 ```
+
+**Key configuration details:**
+- **Input:** `src/plugin.ts` - Entry point for compilation
+- **Output:** `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js` - Bundled plugin code
+- **Source maps:** Enabled for debugging (not included in final package)
+- **Format:** ES modules (`format: 'es'`)
+- **Minification:** Terser removes comments and minifies code
+- **Node resolution:** Handles `node_modules` imports
+- **CommonJS support:** Converts CommonJS modules to ES modules
 
 #### `tsconfig.json`
 
-TypeScript compiler settings:
+TypeScript compiler configuration:
 
 ```json
 {
@@ -566,7 +344,7 @@ Stream Deck plugin metadata:
 ```json
 {
   "Name": "Wiener Linien Information",
-  "Version": "0.1.0.0",
+  "Version": "0.5.0.0",
   "UUID": "com.mikel-me.wienerlinien",
   "CodePath": "bin/plugin.js",
   "Nodejs": {
@@ -575,9 +353,21 @@ Stream Deck plugin metadata:
   },
   "Actions": [
     {
-      "UUID": "com.mikel-me.wienerlinien.departures",
-      "Name": "Departure Monitor",
-      // ... action configuration
+      "UUID": "com.mikel-me.wienerlinien.departure",
+      "Name": "Vienna - Wiener Linien Departure Board",
+      "Icon": "imgs/actions/wienerlinien_departures/icon",
+      "Tooltip": "Displays real-time departure information from Wiener Linien",
+      "PropertyInspectorPath": "ui/departure-monitor.html",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "imgs/actions/wienerlinien_departures/icon",
+          "TitleAlignment": "top",
+          "FontSize": 14,
+          "TitleColor": "#d0cd08",
+          "ShowTitle": true
+        }
+      ]
     }
   ]
 }
@@ -598,104 +388,251 @@ streamdeck validate <path-to-.sdPlugin>
 # Create distribution package
 streamdeck pack <path-to-.sdPlugin> [--force] [--output <path>]
 
-# Enable developer mode (for debugging)
-streamdeck dev
-
-# List installed plugins
-streamdeck list
+# View plugin logs
+streamdeck logs <plugin-uuid>
 ```
-
-### File Locations
-
-**Development:**
-- Source: `src/`
-- Compiled output: `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js`
-- Logs: `com.mikel-me.wienerlinien.sdPlugin/logs/`
-
-**Installed Plugin (Windows):**
-- `%APPDATA%\Elgato\StreamDeck\Plugins\com.mikel-me.wienerlinien.sdPlugin\`
-
-**Distribution:**
-- `com.mikel-me.wienerlinien.streamDeckPlugin` (ZIP archive)
 
 ---
 
-## Best Practices
+## Troubleshooting
 
-### Development
+### Build Errors
 
-1. **Use watch mode** for active development
-2. **Check logs** if issues occur: `com.mikel-me.wienerlinien.sdPlugin/logs/`
-3. **Test frequently** in actual Stream Deck
-4. **Use browser DevTools** when debugging UI: http://localhost:23654/
+#### TypeScript Compilation Errors
 
-### Production
+**Problem:** TypeScript errors during `npm run build`
 
-1. **Always run `npm run build`** before packaging
-2. **Always copy native dependencies** to .sdPlugin folder
-3. **Test packaged version** before distributing
-4. **Keep packages small** by excluding unnecessary files
-5. **Document dependencies** clearly
+**Solution:**
+- Check the error messages for specific file and line numbers
+- Common issues:
+  - Type mismatches: Ensure variables match their declared types
+  - Missing imports: Add required import statements
+  - Undefined properties: Check object structures match type definitions
 
-### Version Control
+#### Module Resolution Errors
 
-**Include in Git:**
-- `src/`
-- `package.json`
-- `rollup.config.mjs`
-- `tsconfig.json`
-- `manifest.json` (in .sdPlugin)
-- `ui/` and `imgs/` folders
+**Problem:** `Cannot find module` errors
 
-**Exclude from Git (.gitignore):**
-- `node_modules/`
-- `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js`
-- `com.mikel-me.wienerlinien.sdPlugin/bin/plugin.js.map`
-- `com.mikel-me.wienerlinien.sdPlugin/node_modules/`
-- `com.mikel-me.wienerlinien.sdPlugin/logs/`
-- `*.streamDeckPlugin`
-
----
-
-## Summary
-
-### For Quick Reference
-
-**Development:**
+**Solution:**
 ```bash
-npm install              # First time only
-npm run watch            # Development mode
-streamdeck link com.mikel-me.wienerlinien.sdPlugin  # First time only
+# Clear node_modules and reinstall
+rm -rf node_modules package-lock.json
+npm install
 ```
 
-**Production:**
+### Stream Deck CLI Errors
+
+#### "Directory not found" when packing
+
+**Problem:** `streamdeck pack` fails with "Directory not found"
+
+**Solution:**
+- Ensure you're in the correct directory (where `.sdPlugin` folder exists)
+- Check the folder name matches exactly: `com.mikel-me.wienerlinien.sdPlugin`
+
+#### "CodePath file not found"
+
+**Problem:** Packing fails with "CodePath file not found, 'bin/plugin.js'"
+
+**Solution:**
 ```bash
+# Rebuild the plugin first
 npm run build
-mkdir -p com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs
-cp -r node_modules/@napi-rs/canvas* com.mikel-me.wienerlinien.sdPlugin/node_modules/@napi-rs/
+# Then pack
 streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force
 ```
 
-### Key Points for AI Assistants
+### Runtime Errors
 
-1. **Native Dependencies**: The `@napi-rs/canvas` module MUST be manually copied to the .sdPlugin folder before packaging
-2. **Two Build Modes**: Watch (development) vs Production (distribution) have different outputs
-3. **Rollup Configuration**: External modules are not bundled but must be available at runtime
-4. **Stream Deck CLI**: Essential for linking, validating, and packaging plugins
-5. **Node.js 20**: Required by Stream Deck's embedded runtime
+#### Plugin not appearing in Stream Deck
+
+**Problem:** Plugin installed but doesn't show up in Stream Deck
+
+**Solution:**
+1. Restart Stream Deck application completely
+2. Check manifest.json is valid JSON (no syntax errors)
+3. Verify UUID is unique and matches in all places
+
+#### Plugin crashes or doesn't update
+
+**Problem:** Plugin stops responding or doesn't reflect code changes
+
+**Solution:**
+```bash
+# Restart the plugin
+streamdeck restart com.mikel-me.wienerlinien
+
+# Or rebuild and restart
+npm run build
+streamdeck restart com.mikel-me.wienerlinien
+```
+
+#### API not returning data
+
+**Problem:** No departure information displayed
+
+**Solution:**
+- Check internet connection
+- Verify RBL number is valid (Wiener Linien station ID)
+- Check Stream Deck logs for API errors
+- API endpoint: `https://www.wienerlinien.at/ogd_realtime/monitor`
+
+### Watch Mode Issues
+
+#### Watch mode not detecting changes
+
+**Problem:** Files save but plugin doesn't rebuild
+
+**Solution:**
+- Stop watch mode (`Ctrl+C`)
+- Restart: `npm run watch`
+- Check file is in `src/` directory (only `src/**/*.ts` files are watched)
+
+#### Watch mode restarts too frequently
+
+**Problem:** Plugin restarts multiple times for one change
+
+**Solution:**
+- This is normal if you save multiple files quickly
+- Wait for build to complete before saving next file
+
+---
+
+## Technical Reference
+
+### Dependencies Explained
+
+#### Runtime Dependencies
+
+- **@elgato/streamdeck** (^1.0.0)
+  - Official Stream Deck SDK for Node.js plugins
+  - Provides APIs for button interactions, settings, images
+  - Event-driven architecture
+
+#### Development Dependencies
+
+- **@elgato/cli** (^1.5.1)
+  - Stream Deck command-line tools
+  - Provides `streamdeck` commands for development
+
+- **@rollup/plugin-typescript** (^12.1.0)
+  - Compiles TypeScript to JavaScript during bundling
+  - Integrates TypeScript compiler with Rollup
+
+- **@rollup/plugin-node-resolve** (^15.2.2)
+  - Resolves `node_modules` imports
+  - Bundles third-party dependencies
+
+- **@rollup/plugin-commonjs** (^28.0.0)
+  - Converts CommonJS modules to ES modules
+  - Required for some npm packages
+
+- **@rollup/plugin-json** (^6.1.0)
+  - Imports JSON files as modules
+  - Used for configuration files
+
+- **@rollup/plugin-terser** (^0.4.4)
+  - Minifies JavaScript code
+  - Reduces bundle size for production
+
+- **rollup** (^4.0.2)
+  - Module bundler for JavaScript
+  - Combines multiple source files into single bundle
+
+- **typescript** (^5.2.2)
+  - TypeScript compiler
+  - Provides type checking and modern JavaScript features
+
+### SVG Rendering Architecture
+
+The plugin uses **pure SVG rendering** instead of canvas:
+
+**Benefits:**
+- No native dependencies (no platform-specific binaries)
+- Extremely lightweight package (~52 KB vs ~52 MB with canvas)
+- Cross-platform compatible (Windows, macOS, Linux)
+- Easy to maintain and debug
+
+**Implementation:**
+- `src/utils/svg-renderer.ts` contains all SVG generation functions
+- Renders button states: departures, errors, loading, no data
+- Uses `data:image/svg+xml` format for Stream Deck `setImage()` API
+- Supports customizable colors, fonts, and text sizes
+
+### API Integration
+
+**Wiener Linien Real-time API:**
+- Endpoint: `https://www.wienerlinien.at/ogd_realtime/monitor`
+- Parameters:
+  - `rbl` - Station identifier (required)
+  - `activateTrafficInfo` - Include service alerts (optional)
+- Response format: JSON
+- Cache duration: 30 seconds (implemented in plugin)
+
+### Version Numbering
+
+Plugin uses **four-part versioning**: `MAJOR.MINOR.PATCH.BUILD`
+
+Example: `0.5.0.0`
+- **0** - Major version (pre-1.0 = beta)
+- **5** - Minor version (new features)
+- **0** - Patch version (bug fixes)
+- **0** - Build number (reserved)
+
+Update version in `manifest.json` before creating new package.
 
 ---
 
 ## Additional Resources
 
-- **Stream Deck SDK Documentation**: https://docs.elgato.com/sdk
-- **Stream Deck CLI**: https://docs.elgato.com/sdk/plugins/cli
-- **Rollup Documentation**: https://rollupjs.org/
-- **TypeScript Documentation**: https://www.typescriptlang.org/
-- **@napi-rs/canvas**: https://github.com/Brooooooklyn/canvas
+### Documentation
+
+- **Stream Deck SDK Docs:** https://docs.elgato.com/sdk
+- **Stream Deck CLI Docs:** https://docs.elgato.com/sdk/plugins/cli
+- **Rollup Documentation:** https://rollupjs.org/
+- **TypeScript Documentation:** https://www.typescriptlang.org/docs/
+
+### Wiener Linien API
+
+- **API Documentation:** https://www.data.gv.at/katalog/dataset/wiener-linien-echtzeitdaten-via-datendrehscheibe-wien
+- **Open Data Portal:** https://www.data.gv.at/
+
+### Community
+
+- **Stream Deck Plugin Forums:** https://discord.gg/elgato
+- **GitHub Issues:** Report bugs and request features in this repository
 
 ---
 
-**Last Updated**: November 13, 2025
-**Plugin Version**: 0.1.0.0
-**Tested On**: Windows 10/11, Stream Deck Software 6.x
+## Summary
+
+### Development Workflow
+
+1. `npm install` - Install dependencies (first time only)
+2. `npm run watch` - Start development mode
+3. Make changes in `src/` directory
+4. Plugin automatically rebuilds and restarts
+5. Test in Stream Deck
+
+### Production Release
+
+1. Update version in `manifest.json`
+2. `npm run build` - Clean production build
+3. `streamdeck pack com.mikel-me.wienerlinien.sdPlugin --force` - Create package
+4. Distribute `.streamDeckPlugin` file
+
+### Key Features
+
+✅ Pure SVG rendering (no native dependencies)
+✅ Lightweight package (~52 KB)
+✅ Cross-platform compatible
+✅ Real-time Vienna public transport data
+✅ Customizable colors and text
+✅ Advanced settings (text override, font sizes)
+✅ Auto-refresh with configurable intervals
+✅ Progress bar showing time until next refresh
+
+---
+
+**Plugin Version:** 0.5.0.0
+**Last Updated:** 2025-11-30

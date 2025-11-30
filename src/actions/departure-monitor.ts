@@ -267,12 +267,16 @@ export class DepartureMonitor extends SingletonAction<DepartureSettings> {
 		// Clear any error title when we're rendering new content
 		await action.setTitle("");
 
-		// Get settings for custom colors
+		// Get settings for custom colors and overrides
 		const settings = this.actionSettings.get(action.id);
 		const renderOptions = {
 			backgroundColor: settings?.backgroundColor || '#000000',
 			textColor: settings?.textColor || '#d0cd08',
-			progressBarColor: settings?.progressBarColor || '#525003'
+			progressBarColor: settings?.progressBarColor || '#525003',
+			overrideTextLine1: settings?.overrideTextLine1,
+			keepLineNumberInParenthesis: settings?.keepLineNumberInParenthesis,
+			textLine1Size: settings?.textLine1Size,
+			textLine2Size: settings?.textLine2Size
 		};
 
 		let svg: string;
@@ -491,4 +495,12 @@ type DepartureSettings = {
 	textColor?: string;
 	/** Progress bar color as hex code (default: #525003) */
 	progressBarColor?: string;
+	/** Custom text to override line 1 (line number display) */
+	overrideTextLine1?: string;
+	/** If overriding line 1, keep original line number in parenthesis (default: true) */
+	keepLineNumberInParenthesis?: boolean;
+	/** Font size for text line 1 (default: 36) */
+	textLine1Size?: number;
+	/** Font size for text line 2 (default: 22) */
+	textLine2Size?: number;
 };
