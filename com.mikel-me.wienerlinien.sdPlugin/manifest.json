@@ -1,5 +1,5 @@
 {
-	"Name": "Wiener Linien Information",
+	"Name": "Vienna Public Transport Information",
 	"Version": "0.5.0.0",
 	"Author": "mikel_me",
 	"Actions": [
@@ -23,7 +23,7 @@
 			]
 		}
 	],
-	"Category": "Wiener Linien Information",
+	"Category": "Vienna Public Transport Information",
 	"CategoryIcon": "imgs/plugin/category-icon",
 	"CodePath": "bin/plugin.js",
 	"Description": "Real-time departure monitor for Wiener Linien (Vienna public transport)",
